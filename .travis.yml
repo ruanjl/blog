@@ -18,11 +18,11 @@ script:
   - hexo g  #生成
 
 after_script:
-  - git clone https://${GH_REF} .deploy_git  # GH_REF是最下面配置的仓库地址，就是你页面的仓库
+  - git clone https://${GH_REF} # GH_REF是最下面配置的仓库地址，就是你页面的仓库
   - cd .deploy_git
   - git checkout master
   - cd ../
-  - mv .deploy_git/.git/ ./public/   # 这一步之前的操作是为了保留master分支的提交记录，不然每次git init的话只有1条commit
+  - mv .deploy_git/* ./public/   # 这一步之前的操作是为了保留master分支的提交记录，不然每次git init的话只有1条commit
   - cd ./public
   - git config user.name "ruanjl"  #修改name
   - git config user.email "18820033594@163.com"  #修改email
