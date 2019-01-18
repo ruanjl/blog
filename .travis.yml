@@ -4,8 +4,13 @@ node_js: stable  #设置相应的版本
 
 install:
   - npm install  #安装hexo及插件
+cache:
+  apt: true
+  directories:
+    - node_modules # 缓存不经常更改的内容
 
 script:
+  - hexo clean  #清除
   - hexo g #生成
 
 after_script:
@@ -29,6 +34,5 @@ env:
 notifications:
   email:
     - 18820033594@163.com
-    - 314475224@qq.com
   on_success: change
   on_failure: always
