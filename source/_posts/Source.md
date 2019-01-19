@@ -1,6 +1,7 @@
 title: springMVC 源码自探
 date: 2019-01-17 15:28:30
-tags: 源码 springMVC
+tags: [源码, springMVC]
+categories: [springMVC]
 ---
 ## springMVC 源码自探
 
