@@ -1,8 +1,6 @@
----
-layout: springmvc Source
-title: Source
+title: springMVC 源码自探
 date: 2019-01-17 15:28:30
-tags:
+tags: 源码 springMVC
 ---
 ## springMVC 源码自探
 
@@ -13,5 +11,5 @@ tags:
 1. http的知识
 2. 消息转化
 3. 拦截器的实现原理
-4. 其他，如消息监控的植入acutor
+4. 其他，如消息监控的植入acutor,zipkin等。
 
