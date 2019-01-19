@@ -1,7 +1,7 @@
 title: 'QuickSort Application in java'
 date: 2018-11-25 23:07:22
 tags: Algorithm
-categories: 数据结构与算法
+categories: [算法]
 top: True
 ---
 ## 前言：
