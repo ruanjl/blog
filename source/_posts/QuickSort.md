@@ -11,6 +11,7 @@ top: true
 
     java中的Arrays.Sort()方法是我们常用的排序方法，有心的人肯定点进去源码里面看过的，随着jdk的变化这个排序也有持续的变动，说明维护的人
     还是很愿意花精力在这个方法上的，代码对基本算法没有足够了解的人来说看起来还是很吃力的(我说的是以前的我)，花了点时间整理下这个算法。
+    本文需要对基本算法有一点了解才会容易看懂些，特别是快排。
 ### 涉及的算法
 1. 插入排序(之前有用binary insertion,既二分法找到插入点后copy)
 2. 归并排序
@@ -21,7 +22,7 @@ top: true
 5. timSort(用于分析本身排序情况)
 
 ### 大致思路
-尽量发掘各自单一排序算法自己优势，当有合适使用条件的时候就使用适合的基本排序：
+尽量发掘各自单一排序算法自己优势，当有合适使用条件的时候就使用对应的基本排序，中间穿插一些实用的优化：
 1. 小数据量：插入排序
 2. 适中：快速排序
     - 结合插入排序
@@ -88,307 +89,258 @@ top: true
             // 结束
         }
 ```  
-下面是核心快排 
+下面是核心快排(有点长)我梳理下：
+1. 小范围的用插入排序结束对应区间的排序，跳过
+2. 切分数组成6个区间（不是等分），中间有五个点，排好序
+3. 判断这五个点有没有相等的
+    - 有：双轴三切分
+      - 前后部分直接递归（转到第一步）
+      - 如果中间的切分比较大的话，对他进行瘦身(把那些等于头尾的去掉后)再递归（转到第一步）
+    - 没有：单轴双切分，排除中间相等的点切分，后从方法开头递归（转到第一步）
+      
 ```` java
     /**
      * Sorts the specified range of the array by Dual-Pivot Quicksort.
-     *
-     * @param a the array to be sorted
-     * @param left the index of the first element, inclusive, to be sorted
-     * @param right the index of the last element, inclusive, to be sorted
-     * @param leftmost indicates if this part is the leftmost in the range
      */
-        private static void sort(int[] a, int left, int right, boolean leftmost) {
-            int length = right - left + 1;
-    
-            // 使用插入排序
-            if (length < INSERTION_SORT_THRESHOLD) { // INSERTION_SORT_THRESHOLD = 47
-                // 左边是否是最大
-                if (leftmost) {
-                    // 普通的插入排序
-                    for (int i = left, j = i; i < right; j = ++i) {
-                        int ai = a[i + 1];
-                        while (ai < a[j]) {
-                            a[j + 1] = a[j];
-                            if (j-- == left) {
-                                break;
-                            }
+    private static void sort(int[] a, int left, int right, boolean leftmost) {
+        int length = right - left + 1;
+
+        // 使用插入排序
+        if (length < INSERTION_SORT_THRESHOLD) { // INSERTION_SORT_THRESHOLD = 47
+            // 左边是否是最大
+            if (leftmost) {
+                // 普通的插入排序
+                for (int i = left, j = i; i < right; j = ++i) {
+                    int ai = a[i + 1];
+                    while (ai < a[j]) {
+                        a[j + 1] = a[j];
+                        if (j-- == left) {
+                            break;
                         }
-                        a[j + 1] = ai;
                     }
-                } else {
-                    /*
-                     * 跳过最长升序
-                     */
-                    do {
-                        if (left >= right) {
-                            return;
-                        }
-                    } while (a[++left] >= a[left - 1]);
-    
-                    /*
-                     * 这里也不是普通的的插入排序，
-                     * 使用的是双元素插入法更优。
-                     */
-                    for (int k = left; ++left <= right; k = ++left) {
-                        int a1 = a[k], a2 = a[left];
-    
-                        if (a1 < a2) {
-                            a2 = a1; a1 = a[left];
-                        }
-                        while (a1 < a[--k]) {
-                            a[k + 2] = a[k];
-                        }
-                        a[++k + 1] = a1;
-    
-                        while (a2 < a[--k]) {
-                            a[k + 1] = a[k];
-                        }
-                        a[k + 1] = a2;
-                    }
-                    int last = a[right];
-    
-                    while (last < a[--right]) {
-                        a[right + 1] = a[right];
-                    }
-                    a[right + 1] = last;
+                    a[j + 1] = ai;
                 }
-                return;
+            } else {
+                /*
+                 * 跳过最长升序
+                 */
+                do {
+                    if (left >= right) {
+                        return;
+                    }
+                } while (a[++left] >= a[left - 1]);
+
+                /*
+                 * 这里也不是普通的的插入排序，
+                 * 使用的是双元素插入法更优。
+                 */
+                for (int k = left; ++left <= right; k = ++left) {
+                    int a1 = a[k], a2 = a[left];
+
+                    if (a1 < a2) {
+                        a2 = a1; a1 = a[left];
+                    }
+                    while (a1 < a[--k]) {
+                        a[k + 2] = a[k];
+                    }
+                    a[++k + 1] = a1;
+
+                    while (a2 < a[--k]) {
+                        a[k + 1] = a[k];
+                    }
+                    a[k + 1] = a2;
+                }
+                int last = a[right];
+
+                while (last < a[--right]) {
+                    a[right + 1] = a[right];
+                }
+                a[right + 1] = last;
             }
-    
-            // 快速得到接近七等分的长度 9/64的长度 + 1
-            int seventh = (length >> 3) + (length >> 6) + 1;
-            // 各个等分点
-            int e3 = (left + right) >>> 1; // The midpoint
-            int e2 = e3 - seventh;
-            int e1 = e2 - seventh;
-            int e4 = e3 + seventh;
-            int e5 = e4 + seventh;
-    
-            // Sort these elements using insertion sort
-            if (a[e2] < a[e1]) { int t = a[e2]; a[e2] = a[e1]; a[e1] = t; }
-    
-            if (a[e3] < a[e2]) { int t = a[e3]; a[e3] = a[e2]; a[e2] = t;
+            return;
+        }
+
+        // 快速得到接近七等分的长度(1/8 + 1/64 = 9/64)的长度 + 1
+        int seventh = (length >> 3) + (length >> 6) + 1;
+        // 各个等分点
+        int e3 = (left + right) >>> 1; // The midpoint
+        int e2 = e3 - seventh;
+        int e1 = e2 - seventh;
+        int e4 = e3 + seventh;
+        int e5 = e4 + seventh;
+
+        // 用插入排序将这些点快速排好序
+        if (a[e2] < a[e1]) { int t = a[e2]; a[e2] = a[e1]; a[e1] = t; }
+
+        if (a[e3] < a[e2]) { int t = a[e3]; a[e3] = a[e2]; a[e2] = t;
+            if (t < a[e1]) { a[e2] = a[e1]; a[e1] = t; }
+        }
+        if (a[e4] < a[e3]) { int t = a[e4]; a[e4] = a[e3]; a[e3] = t;
+            if (t < a[e2]) { a[e3] = a[e2]; a[e2] = t;
                 if (t < a[e1]) { a[e2] = a[e1]; a[e1] = t; }
             }
-            if (a[e4] < a[e3]) { int t = a[e4]; a[e4] = a[e3]; a[e3] = t;
+        }
+        if (a[e5] < a[e4]) { int t = a[e5]; a[e5] = a[e4]; a[e4] = t;
+            if (t < a[e3]) { a[e4] = a[e3]; a[e3] = t;
                 if (t < a[e2]) { a[e3] = a[e2]; a[e2] = t;
                     if (t < a[e1]) { a[e2] = a[e1]; a[e1] = t; }
                 }
             }
-            if (a[e5] < a[e4]) { int t = a[e5]; a[e5] = a[e4]; a[e4] = t;
-                if (t < a[e3]) { a[e4] = a[e3]; a[e3] = t;
-                    if (t < a[e2]) { a[e3] = a[e2]; a[e2] = t;
-                        if (t < a[e1]) { a[e2] = a[e1]; a[e1] = t; }
+        }
+
+        // Pointers
+        int less  = left;  // The index of the first element of center part
+        int great = right; // The index before the first element of right part
+
+        if (a[e1] != a[e2] && a[e2] != a[e3] && a[e3] != a[e4] && a[e4] != a[e5]) {
+            // 取第二和第四点为轴
+            int pivot1 = a[e2];
+            int pivot2 = a[e4];
+
+            a[e2] = a[left];
+            a[e4] = a[right];
+            
+            // 找到开始和结束向中间靠拢的合适下标
+            while (a[++less] < pivot1);
+            while (a[--great] > pivot2);
+            
+            // 双轴三切分排序
+            /*
+             *   left part           center part                   right part
+             * +--------------------------------------------------------------+
+             * |  < pivot1  |  pivot1 <= && <= pivot2  |    ?    |  > pivot2  |
+             * +--------------------------------------------------------------+
+             *               ^                          ^       ^
+             *               |                          |       |
+             *              less                        k     great
+             */
+            outer:
+            for (int k = less - 1; ++k <= great; ) {
+                int ak = a[k];
+                if (ak < pivot1) { // Move a[k] to left part
+                    a[k] = a[less];
+                    a[less] = ak;
+                    ++less;
+                } else if (ak > pivot2) { // Move a[k] to right part
+                    while (a[great] > pivot2) {
+                        if (great-- == k) {
+                            break outer;
+                        }
                     }
+                    if (a[great] < pivot1) { // a[great] <= pivot2
+                        a[k] = a[less];
+                        a[less] = a[great];
+                        ++less;
+                    } else { // pivot1 <= a[great] <= pivot2
+                        a[k] = a[great];
+                    }
+                    a[great] = ak;
+                    --great;
                 }
             }
-    
-            // Pointers
-            int less  = left;  // The index of the first element of center part
-            int great = right; // The index before the first element of right part
-    
-            if (a[e1] != a[e2] && a[e2] != a[e3] && a[e3] != a[e4] && a[e4] != a[e5]) {
+
+            // Swap pivots into their final positions
+            a[left]  = a[less  - 1]; a[less  - 1] = pivot1;
+            a[right] = a[great + 1]; a[great + 1] = pivot2;
+
+            // 前后切分，递归
+            sort(a, left, less - 2, leftmost);
+            sort(a, great + 2, right, false);
+
+            /* 
+             * 如果中间长度大于 length 4/7 的长度
+             */
+            if (less < e1 && e5 < great) {
+                while (a[less] == pivot1) {
+                    ++less;
+                }
+
+                while (a[great] == pivot2) {
+                    --great;
+                }
+
                 /*
-                 * Use the second and fourth of the five sorted elements as pivots.
-                 * These values are inexpensive approximations of the first and
-                 * second terciles of the array. Note that pivot1 <= pivot2.
-                 */
-                int pivot1 = a[e2];
-                int pivot2 = a[e4];
-    
-                /*
-                 * The first and the last elements to be sorted are moved to the
-                 * locations formerly occupied by the pivots. When partitioning
-                 * is complete, the pivots are swapped back into their final
-                 * positions, and excluded from subsequent sorting.
-                 */
-                a[e2] = a[left];
-                a[e4] = a[right];
-    
-                /*
-                 * Skip elements, which are less or greater than pivot values.
-                 */
-                while (a[++less] < pivot1);
-                while (a[--great] > pivot2);
-                
-                // 双轴三切分
-    
-                /*
-                 * Partitioning:
-                 *
-                 *   left part           center part                   right part
-                 * +--------------------------------------------------------------+
-                 * |  < pivot1  |  pivot1 <= && <= pivot2  |    ?    |  > pivot2  |
-                 * +--------------------------------------------------------------+
-                 *               ^                          ^       ^
-                 *               |                          |       |
-                 *              less                        k     great
-                 *
-                 * Invariants:
-                 *
-                 *              all in (left, less)   < pivot1
-                 *    pivot1 <= all in [less, k)     <= pivot2
-                 *              all in (great, right) > pivot2
-                 *
-                 * Pointer k is the first index of ?-part.
+                 *   left part         center part                  right part
+                 * +----------------------------------------------------------+
+                 * | == pivot1 |  pivot1 < && < pivot2  |    ?    | == pivot2 |
+                 * +----------------------------------------------------------+
+                 *              ^                        ^       ^
+                 *             less                      k     great
                  */
                 outer:
                 for (int k = less - 1; ++k <= great; ) {
                     int ak = a[k];
-                    if (ak < pivot1) { // Move a[k] to left part
+                    if (ak == pivot1) { // Move a[k] to left part
                         a[k] = a[less];
-                        /*
-                         * Here and below we use "a[i] = b; i++;" instead
-                         * of "a[i++] = b;" due to performance issue.
-                         */
                         a[less] = ak;
                         ++less;
-                    } else if (ak > pivot2) { // Move a[k] to right part
-                        while (a[great] > pivot2) {
+                    } else if (ak == pivot2) { // Move a[k] to right part
+                        while (a[great] == pivot2) {
                             if (great-- == k) {
                                 break outer;
                             }
                         }
-                        if (a[great] < pivot1) { // a[great] <= pivot2
+                        if (a[great] == pivot1) { // a[great] < pivot2
                             a[k] = a[less];
-                            a[less] = a[great];
+                            a[less] = pivot1;
                             ++less;
-                        } else { // pivot1 <= a[great] <= pivot2
+                        } else { // pivot1 < a[great] < pivot2
                             a[k] = a[great];
                         }
-                        /*
-                         * Here and below we use "a[i] = b; i--;" instead
-                         * of "a[i--] = b;" due to performance issue.
-                         */
                         a[great] = ak;
                         --great;
                     }
                 }
-    
-                // Swap pivots into their final positions
-                a[left]  = a[less  - 1]; a[less  - 1] = pivot1;
-                a[right] = a[great + 1]; a[great + 1] = pivot2;
-    
-                // 切分后递归
-                sort(a, left, less - 2, leftmost);
-                sort(a, great + 2, right, false);
-    
-                /* 
-                 * 如果中间太大包含了大于 length 4/7 的长度
-                 * If center part is too large (comprises > 4/7 of the array),
-                 * swap internal pivot values to ends.
-                 */
-                if (less < e1 && e5 < great) {
-                    /*
-                     * Skip elements, which are equal to pivot values.
-                     */
-                    while (a[less] == pivot1) {
-                        ++less;
-                    }
-    
-                    while (a[great] == pivot2) {
-                        --great;
-                    }
-    
-                    /*
-                     *   left part         center part                  right part
-                     * +----------------------------------------------------------+
-                     * | == pivot1 |  pivot1 < && < pivot2  |    ?    | == pivot2 |
-                     * +----------------------------------------------------------+
-                     *              ^                        ^       ^
-                     *             less                      k     great
-                     *
-                     * Invariants:
-                     *
-                     *              all in (*,  less) == pivot1
-                     *     pivot1 < all in [less,  k)  < pivot2
-                     *              all in (great, *) == pivot2
-                     *
-                     * Pointer k is the first index of ?-part.
-                     */
-                    outer:
-                    for (int k = less - 1; ++k <= great; ) {
-                        int ak = a[k];
-                        if (ak == pivot1) { // Move a[k] to left part
-                            a[k] = a[less];
-                            a[less] = ak;
-                            ++less;
-                        } else if (ak == pivot2) { // Move a[k] to right part
-                            while (a[great] == pivot2) {
-                                if (great-- == k) {
-                                    break outer;
-                                }
-                            }
-                            if (a[great] == pivot1) { // a[great] < pivot2
-                                a[k] = a[less];
-                                a[less] = pivot1;
-                                ++less;
-                            } else { // pivot1 < a[great] < pivot2
-                                a[k] = a[great];
-                            }
-                            a[great] = ak;
-                            --great;
-                        }
-                    }
-                }
-    
-                // 第三个切分
-                sort(a, less, great, false);
-    
-            } else { // 单轴快排
-                int pivot = a[e3];
-    
-                /*
-                 *   left part    center part              right part
-                 * +-------------------------------------------------+
-                 * |  < pivot  |   == pivot   |     ?    |  > pivot  |
-                 * +-------------------------------------------------+
-                 *              ^              ^        ^
-                 *             less            k      great
-                 *
-                 * Invariants:
-                 *
-                 *   all in (left, less)   < pivot
-                 *   all in [less, k)     == pivot
-                 *   all in (great, right) > pivot
-                 */
-                for (int k = less; k <= great; ++k) {
-                    if (a[k] == pivot) {
-                        continue;
-                    }
-                    int ak = a[k];
-                    if (ak < pivot) { // Move a[k] to left part
-                        a[k] = a[less];
-                        a[less] = ak;
-                        ++less;
-                    } else { // a[k] > pivot - Move a[k] to right part
-                        while (a[great] > pivot) {
-                            --great;
-                        }
-                        if (a[great] < pivot) { // a[great] <= pivot
-                            a[k] = a[less];
-                            a[less] = a[great];
-                            ++less;
-                        } else { // a[great] == pivot
-                            a[k] = pivot;
-                        }
-                        a[great] = ak;
-                        --great;
-                    }
-                }
-    
-                /*
-                 * 切分后递归
-                 */
-                sort(a, left, less - 1, leftmost);
-                sort(a, great + 1, right, false);
             }
+
+            // 中间递归
+            sort(a, less, great, false);
+
+        } else { // 单轴快排
+            int pivot = a[e3];
+
+            /*
+             *   left part    center part              right part
+             * +-------------------------------------------------+
+             * |  < pivot  |   == pivot   |     ?    |  > pivot  |
+             * +-------------------------------------------------+
+             *              ^              ^        ^
+             *             less            k      great
+             */
+            for (int k = less; k <= great; ++k) {
+                if (a[k] == pivot) {
+                    continue;
+                }
+                int ak = a[k];
+                if (ak < pivot) { // Move a[k] to left part
+                    a[k] = a[less];
+                    a[less] = ak;
+                    ++less;
+                } else { // a[k] > pivot - Move a[k] to right part
+                    while (a[great] > pivot) {
+                        --great;
+                    }
+                    if (a[great] < pivot) { // a[great] <= pivot
+                        a[k] = a[less];
+                        a[less] = a[great];
+                        ++less;
+                    } else { // a[great] == pivot
+                        a[k] = pivot;
+                    }
+                    a[great] = ak;
+                    --great;
+                }
+            }
+
+            /*
+             * 双切分，递归
+             */
+            sort(a, left, less - 1, leftmost);
+            sort(a, great + 1, right, false);
         }
+    }
 ````
-我承认要有点耐心才能看完，如果你看完了，看别的代码那就是小菜一碟了 - -。
+我承认需要要有点耐心才能看完，如果你看完了，看别的代码那就是小菜一碟了 - -。
 
    
-    
-    
     
