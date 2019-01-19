@@ -158,14 +158,7 @@ top: true
     
             // 快速得到接近七等分的长度 9/64的长度 + 1
             int seventh = (length >> 3) + (length >> 6) + 1;
-    
-            /*
-             * Sort five evenly spaced elements around (and including) the
-             * center element in the range. These elements will be used for
-             * pivot selection as described below. The choice for spacing
-             * these elements was empirically determined to work well on
-             * a wide variety of inputs.
-             */
+            // 各个等分点
             int e3 = (left + right) >>> 1; // The midpoint
             int e2 = e3 - seventh;
             int e1 = e2 - seventh;
@@ -218,6 +211,8 @@ top: true
                  */
                 while (a[++less] < pivot1);
                 while (a[--great] > pivot2);
+                
+                // 双轴三切分
     
                 /*
                  * Partitioning:
@@ -275,11 +270,12 @@ top: true
                 a[left]  = a[less  - 1]; a[less  - 1] = pivot1;
                 a[right] = a[great + 1]; a[great + 1] = pivot2;
     
-                // Sort left and right parts recursively, excluding known pivots
+                // 切分后递归
                 sort(a, left, less - 2, leftmost);
                 sort(a, great + 2, right, false);
     
-                /*
+                /* 
+                 * 如果中间太大包含了大于 length 4/7 的长度
                  * If center part is too large (comprises > 4/7 of the array),
                  * swap internal pivot values to ends.
                  */
@@ -296,14 +292,11 @@ top: true
                     }
     
                     /*
-                     * Partitioning:
-                     *
                      *   left part         center part                  right part
                      * +----------------------------------------------------------+
                      * | == pivot1 |  pivot1 < && < pivot2  |    ?    | == pivot2 |
                      * +----------------------------------------------------------+
                      *              ^                        ^       ^
-                     *              |                        |       |
                      *             less                      k     great
                      *
                      * Invariants:
@@ -329,14 +322,6 @@ top: true
                             }
                             if (a[great] == pivot1) { // a[great] < pivot2
                                 a[k] = a[less];
-                                /*
-                                 * Even though a[great] equals to pivot1, the
-                                 * assignment a[less] = pivot1 may be incorrect,
-                                 * if a[great] and pivot1 are floating-point zeros
-                                 * of different signs. Therefore in float and
-                                 * double sorting methods we have to use more
-                                 * accurate assignment a[less] = a[great].
-                                 */
                                 a[less] = pivot1;
                                 ++less;
                             } else { // pivot1 < a[great] < pivot2
@@ -348,26 +333,18 @@ top: true
                     }
                 }
     
-                // Sort center part recursively
+                // 第三个切分
                 sort(a, less, great, false);
     
             } else { // 单轴快排
-                /*
-                 * Use the third of the five sorted elements as pivot.
-                 * This value is inexpensive approximation of the median.
-                 */
                 int pivot = a[e3];
     
                 /*
-                 * Partitioning degenerates to the traditional 3-way
-                 * (or "Dutch National Flag") schema:
-                 *
                  *   left part    center part              right part
                  * +-------------------------------------------------+
                  * |  < pivot  |   == pivot   |     ?    |  > pivot  |
                  * +-------------------------------------------------+
                  *              ^              ^        ^
-                 *              |              |        |
                  *             less            k      great
                  *
                  * Invariants:
@@ -375,8 +352,6 @@ top: true
                  *   all in (left, less)   < pivot
                  *   all in [less, k)     == pivot
                  *   all in (great, right) > pivot
-                 *
-                 * Pointer k is the first index of ?-part.
                  */
                 for (int k = less; k <= great; ++k) {
                     if (a[k] == pivot) {
@@ -396,14 +371,6 @@ top: true
                             a[less] = a[great];
                             ++less;
                         } else { // a[great] == pivot
-                            /*
-                             * Even though a[great] equals to pivot, the
-                             * assignment a[k] = pivot may be incorrect,
-                             * if a[great] and pivot are floating-point
-                             * zeros of different signs. Therefore in float
-                             * and double sorting methods we have to use
-                             * more accurate assignment a[k] = a[great].
-                             */
                             a[k] = pivot;
                         }
                         a[great] = ak;
@@ -412,16 +379,14 @@ top: true
                 }
     
                 /*
-                 * Sort left and right parts recursively.
-                 * All elements from center part are equal
-                 * and, therefore, already sorted.
+                 * 切分后递归
                  */
                 sort(a, left, less - 1, leftmost);
                 sort(a, great + 1, right, false);
             }
         }
 ````
-
+我承认要有点耐心才能看完，如果你看完了，看别的代码那就是小菜一碟了 - -。
 
    
     
