@@ -13,4 +13,3 @@ categories: [springMVC]
 2. 消息转化
 3. 拦截器的实现原理
 4. 其他，如消息监控的植入actuator,zipkin等。
-

@@ -30,20 +30,12 @@ top: true
     - 递归调用自己 
 3. 大量：先分用timSort分析数据本身排序状况，
     - 衡量指标：run(单调升降序长度)和runs(归并次数)
-    - 结构化可以就用归并，否则就用快排归并
+    - 满足对应的常量要求就用归并，否则就用快排
     
-### 具体代码(jdk1.8)
+### 具体代码(jdk1.8#对int[]排序)
 ``` java
     /**
-     * Sorts the specified range of the array using the given
-     * workspace array slice if possible for merging
-     *
-     * @param a the array to be sorted
-     * @param left the index of the first element, inclusive, to be sorted
-     * @param right the index of the last element, inclusive, to be sorted
-     * @param work a workspace array (slice)
-     * @param workBase origin of usable space in work array
-     * @param workLen usable size of work array
+     * 将给定区间数组排序，如果可以的话使用归并排序
      */
     static void sort(int[] a, int left, int right,
                          int[] work, int workBase, int workLen) {
@@ -340,7 +332,11 @@ top: true
         }
     }
 ````
-我承认需要要有点耐心才能看完，如果你看完了，看别的代码那就是小菜一碟了 - -。
+我承认需要要有点耐心才能看完，如果你认真看完并理解了，看别的代码那就是小菜一碟了 - -。
+### 总结一下
+1. 数据量小(n<47)：使用插入排序
+2. 数据量大(n>286)：且符合归并排序的指标(run<33,runs<67)就用归并
+3. 别的时候都是使用快排递归解决
 
    
     
