@@ -24,8 +24,8 @@ categories: [springMVC]
 #### DispatcherServlet.doDispatch()
 >先从10个handlerMappings中的找到对应的handlerMapping,然后从这个handlerMapping通过urlPath，找到对应方法的handler
  并将拦截器加入handler组装成HandlerExecutionChain，如果执行HandlerExecutionChain的时候拦截器返回false方法会在止到这里直接返回。
- 拦截器如果通过，找到能够使用这个handler(Method Handler)的handlerAdapter（一般是这个:RequestMappingHandlerAdapter）（原本有三个找到对应的支持的）
- 供以后使用，也就是下面的这个方法：
+ 拦截器如果通过，找到能够使用这个handler(Method Handler)的handlerAdapter（一般是这个:RequestMappingHandlerAdapter）
+ （原本有三个找到对应的支持的） 供以后使用，也就是下面的这个方法：
 #### ServletInvocableHandlerMethod.invokeAndHandle()
 >执行里面的方法，并处理返回值
  a. 设置响应状态，
