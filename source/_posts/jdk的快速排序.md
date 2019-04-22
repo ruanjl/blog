@@ -32,6 +32,7 @@ top: true
     
 ### 具体代码:(jdk1.8对int[]的排序)
 ``` java
+class Sort {
     /**
      * 将给定区间数组排序，如果可以的话使用归并排序
      */
@@ -78,6 +79,7 @@ top: true
             // ...... 归并
             // 结束
         }
+}
 ```  
 下面是**核心快排**(有点长)我梳理下：
 1. 小范围的用插入排序结束对应区间的排序，跳过
@@ -89,6 +91,7 @@ top: true
     - 没有：单轴双切分，排除中间相等的点切分，后从方法开头递归（转到第一步）
       
 ```` java
+class Sort{
     /**
      * Sorts the specified range of the array by Dual-Pivot Quicksort.
      */
@@ -329,6 +332,7 @@ top: true
             sort(a, great + 1, right, false);
         }
     }
+}
 ````
 我承认需要要有点耐心才能看完，如果你认真看完并理解了，看别的代码那就是小菜一碟了 - -。
 ### 总结一下
