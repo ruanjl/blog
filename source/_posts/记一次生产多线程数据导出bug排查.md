@@ -1,7 +1,8 @@
 ---
 title: 记一次生产多线程数据导出bug排查
 date: 2019-07-20 15:24:42
-tags: [多线程, 并发, dubbo]
+tags: [多线程, 并发, dubbo, callable, future]
+top: true
 ---
 ### 事情由来:
 同事在写一个数据导出的需求的时候遇到个问题，调用dubbo后没响应，排查后是dubbo数据量多无法传输，
