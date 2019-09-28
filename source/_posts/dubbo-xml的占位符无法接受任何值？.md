@@ -51,7 +51,7 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 ~~~
 
 ### 解决
-我们可以通过这个接口来覆盖对应的值，在beanDefinition被实例化之前将对应的值从Environment取出来放入即可放，也就是：
+我们可以通过这个接口来覆盖对应的值，在beanDefinition被实例化之前将对应的值从Environment取出来，然后将address,group这两个值覆盖即可，也就是：
 ~~~ java
 @Component
 public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
@@ -70,9 +70,9 @@ public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcesso
         String address = ENV.getProperty("dubbo.address");
         String group = ENV.getProperty("dubbo.group");
         MutablePropertyValues propertyValues = registryConfig.getPropertyValues();
-        // 覆盖对应key的占位符
-        propertyValues.add("${dubbo.address}", address);
-        propertyValues.add("${dubbo.group}", group);
+        // 覆盖对应key的值
+        propertyValues.add("address", address);
+        propertyValues.add("group", group);
     }
 
     @Override
