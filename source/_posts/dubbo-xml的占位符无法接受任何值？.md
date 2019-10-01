@@ -11,10 +11,7 @@ tags: [springboot, dubbo]
 终于等到项目整合的末期只剩这个不算bug的bug了，我下定决心打算解决它，于是探索之旅开始了，先是一番老操作：一顿百度google，结果是：只看到有相同提问的却没有一个解答的。 (百度出来也不会写博客了)
 
 ### springFramework3.1和springboot的对于占位符解析的区别.
-由于最近也在看spring源码这一块的东西，刚好用上了，老系统springFramework在启动的时候是先读取xml配置文件,
-接着读取properties文件，并解析占位符，然后才会开始注册beanDefinitions,在实例化之前属性其实就已经解析完了。
-实例化接着初始化复制后连接注册中心,然后开始的其他操作。
-而springboot官方文档里面有这样一段话：
+由于最近也在看spring源码这一块的东西，刚好用上了，老系统springFramework在启动的时候是先读取xml配置文件, 接着读取properties文件，并解析占位符，然后才会开始注册beanDefinitions,在实例化之前属性其实就已经解析完了。 实例化接着初始化复制后连接注册中心,然后开始的其他操作。 而springboot官方文档里面有这样一段话：
 >Caution
 While using @PropertySource on your @SpringBootApplication may seem to be a
 convenient and easy way to load a custom resource in the Environment, we do not recommend
@@ -45,13 +42,15 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 	 * @param registry the bean definition registry used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
+	// 这里就是最关键的地方了，这个方法会在bean definition初始化完成之后，但是还没有任何bean被初始化(initializbean)
+	// 这个方法允许我们对已经注册了的所有bean definition进行额外的操作。
 	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
 
 }
 ~~~
 
 ### 解决
-我们可以通过这个接口来覆盖对应的值，在beanDefinition被实例化之前将对应的值从Environment取出来，然后将address,group这两个值覆盖即可，也就是：
+spring的bean在真正的初始化之前有两个重要的扩展点,使得框架更加灵活,通过实现指定的扩展点接口我们可以修改bean实例化之前(beanDefinition, beanFactory)的对应的属性值，从而来改变实例化的时候属性的值:
 ~~~ java
 @Component
 public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
@@ -77,10 +76,14 @@ public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcesso
 
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        // 或者使用BeanFactoryPostProcessor对应的beanFactory里面的值
+        RegistryConfig registryConfig = beanFactory.getBean(RegistryConfig.class);
+        // 直接获取到对应的dubbo配置即可
+        registryConfig.setAddress(ENV.getProperty("dubbo.group"));
+        registryConfig.setGroup(ENV.getProperty("dubbo.group"));
     }
 }
 ~~~
 
 ### 回顾
 解决这个问题其实走了挺多弯路的，特别是最开始百度的时候，没什么思路，随着对问题的一步一步的探究，也找到了解答的方向，最终找到了答案。
-
