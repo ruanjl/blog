@@ -5,21 +5,44 @@ tags: [springboot, dubbo]
 ---
 
 ### 背景
-最近负责改造公司的老项目到新的技术栈(springboot2.0X)的时候遇到了一个特别尴尬的问题，就是dubbo的配置文件无法使用占位符来注入,这样会导致无论测试还是生产，每次发版的时候都需要改一下，很显然，这样特别不优雅。
+最近负责改造公司的老项目到新的技术栈springCloud(springboot2.0X)的时候遇到了一个特别尴尬的问题，就是dubbo的配置文件无法使用占位符来注入,这样会导致无论测试还是生产，每次发版的时候都需要改一下，很显然，这样特别不优雅。
 
 ### 探索
-终于等到项目整合的末期只剩这个不算bug的bug了，我下定决心打算解决它，于是探索之旅开始了，先是一番老操作：一顿百度google，结果是：只看到有相同提问的却没有一个解答的。 (百度出来也不会写博客了)
+终于等到项目整合的末期只剩这个不算bug的bug了，我下定决心打算解决它，于是探索之旅开始了，先是一番老操作：一顿百度google，结果是：只看到有相同提问的却没有一个解答的。(百度出来也不会写博客了)
 
-### springFramework3.1和springboot的对于占位符解析的区别.
-由于最近也在看spring源码这一块的东西，刚好用上了，老系统springFramework在启动的时候是先读取xml配置文件, 接着读取properties文件，并解析占位符，然后才会开始注册beanDefinitions,在实例化之前属性其实就已经解析完了。 实例化接着初始化复制后连接注册中心,然后开始的其他操作。 而springboot官方文档里面有这样一段话：
+### 老项目的占位符是这样生效的:
+随着源码看一下老项目的占位符生效过程，项目启动的时候扫描先扫描xml配置文件，并调用loadBeanDefinitions，后注册beanDefinition：
+![](/images/loadBeanDefinitions.png)
+在AbstractApplicationContext#refresh中的invokeBeanFactoryPostProcessors会调用PropertyPlaceholderConfigurer的postProcessBeanFactory:
+![](/images/invokeBeanFacotryPostProcessors.png)
+postProcessBeanFactory方法对占位符进行处理：processProperties将所有beanDefinition的占位符进行替换(具体的就不讲了,就是遍历beanDefinition,逐个访问替换)
+![](/images/processProperties.png)
+
+### PropertyPlaceholderConfigurer
+下面是PropertyPlaceholderConfigurer这个类的uml图：
+![](/images/PropertyPlaceholderConfigurer.png) 如果我们配置了properties文件等等的最终是以这个bean的形式注入到容器的。 然后在bean实例化之前refresh方法会调用对应的方法使得占位符生效。
+
+### springCloud(springCloud)项目启动是这样生效的:
+springboot官方文档里面有这样一段话：
 >Caution
 While using @PropertySource on your @SpringBootApplication may seem to be a
 convenient and easy way to load a custom resource in the Environment, we do not recommend
 it, because Spring Boot prepares the Environment before the ApplicationContext is
 refreshed. Any key defined with @PropertySource is loaded too late to have any effect on auto configuration.
 
-**也就是说@propertySource 注解起作用的时候太晚了**，不能对auto configuration 起到作用。 我也想通过在yml里面写对应的属性值，但是我发现当springboot去加载xml bean的parse后registry的时候并不会对占位符进行解析 也就是beanDefinition里面就还是原来的占位符的字符串：而springFramework同一个时候是已经解析了的 好在spring可以在beanDefinition实例化之前支持扩展beanDefinition也就是实现接口 BeanDefinitionRegistryPostProcessor;这里有两个方法,我们需要实现的是这个接口：
+意思就是说@propertySource 注解起作用的时候太晚了，不能对auto 
+configuration起到作用。bean会在在我们还没有解析占位符的时候就初始化，导致启动异常。
 
+**springCloud的启动流程:**
+1. 先获取注册中心的注册表
+2. 请求configServer,拉回配置信息
+3. 由RefreshAutoConfiguration的内部类RefreshScopeBeanDefinitionEnhancer进行刷新配置,这个过程中获要工具类型获取Environment,调用getBean(Environment.class);
+4. 通过类型获取一个bean会导致遍历bean,这个过程会调用到isTypeMatch
+5. 当遍历到dubbo服务的bean(因为dubbo的service都是FactoryBean)时候的doCreateBean需要依赖RegistryConfig,
+6. dubbo里面的工具类获取:BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, RegistryConfig.class, false, false);而这个时候PropertyPlaceholderConfigurer还没有被调用,导致占位符没有解析连接不上。   
+
+### 解决
+知道原因解决起来就相对简单了，在他调用刷新RefreshScopeBeanDefinitionEnhancer之前先进行占位符解析，可以用spring优先级高的扩展点：
 ~~~java
 /**
  * Extension to the standard {@link BeanFactoryPostProcessor} SPI, allowing for
@@ -48,9 +71,8 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 
 }
 ~~~
-
-### 解决
-spring的bean在真正的初始化之前有两个重要的扩展点,使得框架更加灵活,通过实现指定的扩展点接口我们可以修改bean实例化之前(beanDefinition, beanFactory)的对应的属性值，从而来改变实例化的时候属性的值:
+### 对应代码：
+相面两个都可以解决问题，只要实现其中一个就可以了。
 ~~~ java
 @Component
 public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
@@ -86,4 +108,4 @@ public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcesso
 ~~~
 
 ### 回顾
-解决这个问题其实走了挺多弯路的，特别是最开始百度的时候，没什么思路，随着对问题的一步一步的探究，也找到了解答的方向，最终找到了答案。
+解决这个问题其实走了挺多弯路的，特别是最开始百度的时候，没什么思路，随着对问题的一步一步的探究，跟着出问题的源码，在加上对源码的一部分技艺，也找到了解答的方向，最终找到了答案。
