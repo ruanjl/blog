@@ -22,17 +22,19 @@ postProcessBeanFactory方法对占位符进行处理：processProperties将所�
 下面是PropertyPlaceholderConfigurer这个类的uml图：
 ![](/images/PropertyPlaceholderConfigurer.png) 如果我们配置了properties文件等等的最终是以这个bean的形式注入到容器的。 然后在bean实例化之前refresh方法会调用对应的方法使得占位符生效。
 
-### springCloud(springboot)项目启动是这样生效的:
-springboot官方文档里面有这样一段话：
+### 类比
+本来想着像老项目里面一样注入一个PropertyPlaceholderConfigurer的bean，发现没什么作用。后又用对应的@propertySource发现也没有用，然后直接写在yml里面也没有起作用
+ 
+**后来看springboot官方文档里面有这样一段话：**
 >Caution
 While using @PropertySource on your @SpringBootApplication may seem to be a
 convenient and easy way to load a custom resource in the Environment, we do not recommend
 it, because Spring Boot prepares the Environment before the ApplicationContext is
 refreshed. Any key defined with @PropertySource is loaded too late to have any effect on auto configuration.
 
-意思就是说@propertySource 注解起作用的时候太晚了，不能对auto 
-configuration起到作用。bean会在在我们还没有解析占位符的时候就初始化，导致启动异常。
+意思就是说@propertySource 注解起作用的时候太晚了，不能对auto configuration起到作用。bean会在我们还没有解析占位符的时候就初始化，导致启动异常。
 
+### springCloud(springboot)项目启动是这样生效的:
 **springCloud的启动流程:**
 1. 先获取注册中心的注册表
 2. 请求configServer,拉回配置信息
