@@ -11,19 +11,20 @@ tags: [springboot, dubbo]
 终于等到项目整合的末期只剩这个不算bug的bug了，我下定决心打算解决它，于是探索之旅开始了，先是一番老操作：一顿百度google，结果是：只看到有相同提问的却没有一个解答的。(百度出来也不会写博客了)
 
 ### 老项目的占位符是这样生效的:
-随着源码看一下老项目的占位符生效过程，项目启动的时候扫描先扫描xml配置文件，并调用loadBeanDefinitions，后注册beanDefinition：
+随着源码看一下老项目的占位符生效过程，项目启动的时候扫描先扫描xml配置文件，并调用**loadBeanDefinitions**，后注册**beanDefinition**：
 ![](/images/loadBeanDefinitions.png)
-在AbstractApplicationContext#refresh中的invokeBeanFactoryPostProcessors会调用PropertyPlaceholderConfigurer的postProcessBeanFactory:
+在AbstractApplicationContext#refresh中的invokeBeanFactoryPostProcessors会调用PropertyPlaceholderConfigurer的**postProcessBeanFactory**:
 ![](/images/invokeBeanFacotryPostProcessors.png)
-postProcessBeanFactory方法对占位符进行处理：processProperties将所有beanDefinition的占位符进行替换(具体的就不讲了,就是遍历beanDefinition,逐个访问替换)
+postProcessBeanFactory方法对占位符进行处理：processProperties方法将所有beanDefinition的占位符进行替换(具体的就不讲了,就是遍历beanDefinition,逐个访问替换)
 ![](/images/processProperties.png)
 
 ### PropertyPlaceholderConfigurer
 下面是PropertyPlaceholderConfigurer这个类的uml图：
-![](/images/PropertyPlaceholderConfigurer.png) 如果我们配置了properties文件等等的最终是以这个bean的形式注入到容器的。 然后在bean实例化之前refresh方法会调用对应的方法使得占位符生效。
+![](/images/PropertyPlaceholderConfigurer.png)
+如果我们配置了properties文件等等的最终是以这个bean的形式注入到容器的。然后在refresh方法中bean实例化之前会调用**postProcessBeanFactory**的替换占位符。
 
 ### 类比
-本来想着像老项目里面一样注入一个PropertyPlaceholderConfigurer的bean，发现没什么作用。后又用对应的@propertySource发现也没有用，然后直接写在yml里面也没有起作用
+本来想着像老项目里面一样注入一个PropertyPlaceholderConfigurer的bean，发现没什么作用。后又用对应的@propertySource发现也没有用，然后直接写在yml里面也没有起作用.
  
 **后来看springboot官方文档里面有这样一段话：**
 >Caution
@@ -74,7 +75,7 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 }
 ~~~
 ### 对应代码：
-相面两个都可以解决问题，只要实现其中一个就可以了。
+下面两个实现都可以解决问题，只要实现其中一个就可以了。
 ~~~ java
 @Component
 public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
@@ -110,4 +111,4 @@ public class DubboRegistryOverride implements BeanDefinitionRegistryPostProcesso
 ~~~
 
 ### 回顾
-解决这个问题其实走了挺多弯路的，特别是最开始百度的时候，没什么思路，随着对问题的一步一步的探究，跟着出问题的源码，在加上对源码的一部分技艺，也找到了解答的方向，最终找到了答案。
+解决这个问题其实走了挺多弯路的，特别是最开始百度的时候，没什么思路，随着对问题的一步一步的探究，跟着出问题的源码，在加上对源码的一部分记忆，也找到了解答的方向，最终找到了答案。
