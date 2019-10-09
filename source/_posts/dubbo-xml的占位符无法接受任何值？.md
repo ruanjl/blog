@@ -22,7 +22,7 @@ postProcessBeanFactory方法对占位符进行处理：processProperties将所�
 下面是PropertyPlaceholderConfigurer这个类的uml图：
 ![](/images/PropertyPlaceholderConfigurer.png) 如果我们配置了properties文件等等的最终是以这个bean的形式注入到容器的。 然后在bean实例化之前refresh方法会调用对应的方法使得占位符生效。
 
-### springCloud(springCloud)项目启动是这样生效的:
+### springCloud(springboot)项目启动是这样生效的:
 springboot官方文档里面有这样一段话：
 >Caution
 While using @PropertySource on your @SpringBootApplication may seem to be a
