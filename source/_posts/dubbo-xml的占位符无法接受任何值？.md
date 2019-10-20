@@ -39,10 +39,10 @@ refreshed. Any key defined with @PropertySource is loaded too late to have any e
 **springCloud的启动流程:**
 1. 先获取注册中心的注册表
 2. 请求configServer,拉回配置信息
-3. 由RefreshAutoConfiguration的内部类RefreshScopeBeanDefinitionEnhancer进行刷新配置,这个过程中获要工具类型获取Environment,调用getBean(Environment.class);
+3. 由RefreshAutoConfiguration的内部类RefreshScopeBeanDefinitionEnhancer进行刷新配置,这个过程中获要根据类型获取Environment,调用getBean(Environment.class);
 4. 通过类型获取一个bean会导致遍历bean,这个过程会调用到isTypeMatch
 5. 当遍历到dubbo服务的bean(因为dubbo的service都是FactoryBean)时候的doCreateBean需要依赖RegistryConfig,
-6. dubbo里面的工具类获取:BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, RegistryConfig.class, false, false);而这个时候PropertyPlaceholderConfigurer还没有被调用,导致占位符没有解析连接不上。   
+6. 在初始化bean时候的afterPropertiesSet()方法里面依赖RegistryConfig,的时候抛出异常占位符没有解析无法连接zookeeper导致无法启动。
 
 ### 解决
 知道原因解决起来就相对简单了，在他调用刷新RefreshScopeBeanDefinitionEnhancer之前先进行占位符解析，可以用spring优先级高的扩展点：
