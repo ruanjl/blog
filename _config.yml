@@ -103,6 +103,5 @@ theme: hexo-theme-matery
 deploy:
   type: git
 #  repository: git@github.com:ruanjl/ruanjl.github.io.git
-#  repository: https://gitee.com/Ruanjl007/Ruanjl007.git
   repository: https://e.coding.net/ruanjl/blog.git
   branch: master
